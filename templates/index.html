@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Wallet BruteForce</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0f;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid #00ff8833;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            text-shadow: 0 0 20px #00ff8866;
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #00ff8844; }
+            to { text-shadow: 0 0 30px #00ff88aa; }
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0 30px;
+        }
+        
+        button {
+            background: transparent;
+            color: #00ff88;
+            border: 2px solid #00ff88;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        button:hover {
+            background: #00ff88;
+            color: #0a0a0f;
+            box-shadow: 0 0 30px #00ff8866;
+        }
+        
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-box {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff8833;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-box .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        
+        .stat-box .label {
+            color: #00ff8888;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+        
+        .wallets-list {
+            background: rgba(0, 255, 136, 0.03);
+            border: 1px solid #00ff8833;
+            padding: 20px;
+            margin-top: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .wallets-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        
+        .wallets-list::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+        
+        .wallets-list::-webkit-scrollbar-thumb {
+            background: #00ff88;
+        }
+        
+        .wallet-item {
+            border-bottom: 1px solid #00ff8811;
+            padding: 15px 0;
+            animation: slideIn 0.5s;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .wallet-item .address {
+            color: #00ff88;
+            font-weight: bold;
+        }
+        
+        .wallet-item .balance {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        
+        .wallet-item .mnemonic {
+            color: #8888ff;
+            word-break: break-all;
+            margin-top: 5px;
+        }
+        
+        .wallet-item .private {
+            color: #ff6666;
+            word-break: break-all;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #00ff8844;
+            padding: 40px;
+        }
+        
+        .log {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #00ff8822;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.8em;
+            color: #00ff8866;
+        }
+        
+        @media (max-width: 768px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 WALLET BRUTEFORCE</h1>
+            <p style="color: #00ff8866; margin-top: 10px;">BIP39 12-word seed phrase generator & checker</p>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn" onclick="startScan()">▶ START</button>
+            <button id="stopBtn" onclick="stopScan()" disabled>⏹ STOP</button>
+            <button onclick="clearWallets()">🗑 CLEAR</button>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <div class="number" id="checkedCount">0</div>
+                <div class="label">WALLETS CHECKED</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="foundCount">0</div>
+                <div class="label">WALLETS FOUND</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="speed">0</div>
+                <div class="label">SPEED (wallets/sec)</div>
+            </div>
+        </div>
+        
+        <div class="wallets-list" id="walletsList">
+            <div class="empty-state">⏳ Waiting for wallets...</div>
+        </div>
+        
+        <div class="log" id="log">
+            [System] Ready to scan...
+        </div>
+    </div>
+    
+    <script>
+        let updateInterval;
+        let startTime;
+        let isRunning = false;
+        
+        function addLog(message) {
+            const log = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            log.innerHTML += `\n[${time}] ${message}`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        async function startScan() {
+            try {
+                const response = await fetch('/start', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.status === 'started') {
+                    isRunning = true;
+                    startTime = Date.now();
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    addLog('Scan started...');
+                    updateStats();
+                }
+            } catch (error) {
+                addLog('Error starting scan: ' + error);
+            }
+        }
+        
+        async function stopScan() {
+            try {
+                await fetch('/stop', { method: 'POST' });
+                isRunning = false;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                addLog('Scan stopped');
+                clearInterval(updateInterval);
+            } catch (error) {
+                addLog('Error stopping scan: ' + error);
+            }
+        }
+        
+        async function updateStats() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                
+                document.getElementById('checkedCount').textContent = data.total_checked;
+                document.getElementById('foundCount').textContent = data.total_found;
+                
+                // Speed calculation
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed > 0) {
+                    document.getElementById('speed').textContent = (data.total_checked / elapsed).toFixed(1);
+                }
+                
+                // Update wallets list
+                const walletsList = document.getElementById('walletsList');
+                if (data.found_wallets && data.found_wallets.length > 0) {
+                    walletsList.innerHTML = '';
+                    data.found_wallets.slice().reverse().forEach(wallet => {
+                        const div = document.createElement('div');
+                        div.className = 'wallet-item';
+                        div.innerHTML = `
+                            <div class="address">📍 ${wallet.address}</div>
+                            <div class="balance">💰 ${wallet.balance} BNB</div>
+                            <div class="mnemonic">🔑 ${wallet.mnemonic}</div>
+                            <div class="private">🔐 ${wallet.private_key}</div>
+                        `;
+                        walletsList.appendChild(div);
+                    });
+                }
+                
+                if (isRunning) {
+                    setTimeout(updateStats, 1000);
+                }
+            } catch (error) {
+                addLog('Error updating stats: ' + error);
+            }
+        }
+        
+        async function clearWallets() {
+            try {
+                await fetch('/stop', { method: 'POST' });
+                const response = await fetch('/wallets');
+                const wallets = await response.json();
+                if (wallets.length > 0) {
+                    // Clear all wallets on server side
+                    await fetch('/clear', { method: 'POST' });
+                    document.getElementById('walletsList').innerHTML = '<div class="empty-state">🗑 Cleared</div>';
+                    addLog('Cleared all wallets');
+                }
+            } catch (error) {
+                addLog('Error clearing: ' + error);
+            }
+        }
+        
+        // Check initial status
+        async function checkStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                if (data.is_running) {
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    isRunning = true;
+                    startTime = Date.now() - (data.total_checked * 100);
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Status check error:', error);
+            }
+        }
+        
+        checkStatus();
+        addLog('System ready. Click START to begin scanning.');
+    </script>
+</body>
+  </html>
